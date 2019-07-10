@@ -1,5 +1,9 @@
-book_filename: "US Asthma Prevalence Study (2017)"
+book_filename: "AsthmaBook"
+delete_merged_file: true
+repo: "https://github.com/AnhStudiesData/USAsthmaPrevalenceStudy"
+output_dir: docs
+new_session: yes
 language:
   ui:
     chapter_name: "Chapter "
-delete_merged_file: true
+    
