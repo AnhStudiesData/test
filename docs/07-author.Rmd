@@ -1,0 +1,12 @@
+#About the Author {#author}
+
+![text](./Data/AnhDo_photo.jpg)
+
+Alice Do (Anh Do) is an aspiring data scientist who is also passionate in data visualization and data story telling. She is currently pursuing a Master of Science in Analytics, specializing in Data Science and Marketing Analytics from American University.
+
+Alice developed this Shiny App both as a Final Exam submission for her Data Science class, and a presentation of her research regarding asthma prevalence in the U.S. 
+
+Connect with Alice on [LinkedIn](https://www.linkedin.com/in/anhphuongdo/)  
+
+
+Follow her study and research journey on her [Blog](https://anhstudiesdata.wordpress.com/about-me/)  

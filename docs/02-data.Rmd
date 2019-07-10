@@ -1,0 +1,340 @@
+# The Data {#data}
+
+The original data set was obtained from the CDC website, under the Behavioral Risk Factor Surveillance System, following this [link](https://www.cdc.gov/brfss/annual_data/annual_2017.html).
+
+The data set has 450,016 observations for 358 variables including records of respondents' answers and calculated variables that categorized original data points into groups represented by an integer each. 
+
+From 358 variables available, this project selected and worked with only demographic and lifestyle factors believed to associate with asthma by scientific research.
+
+Common risks factor associated with asthma includes genetic factors, allergies, bad air quality where patients live or work, smoking, and weight status (Mayo Clinic, 2018). According to WebMD, "people with asthma have twice the risk of developing mood and anxiety disorder, including depression" (Bruce, 2009). Previous statistical research has shown that asthma is very common among young adults and adults from age 6 to 40 (NCHS, 2012). Partly because of the risk factors, asthma tends to be more common among the lower income group. Socioeconomic factors and ethnicity are strongly correlated, making income, education level and race demographic factors to be considered while exploring trends in asthma prevalence in the US population. 
+
+In short, factors relating to asthma include, but not limited to: State, Sex, Age, Race, BMI, Education Level, Income Group, Smoker Status, Physical Activities, and Depressive Disorders. The desired data set for this report will narrow down to these ten variables, and ten other variables describing conditions related to current and former asthma patients.
+
+The first part of the codes below demonstrated original data "read-in" and the packages to be used; the second part displayed how to the data was cleaned and necassary data subset created. The list at the end were the variables chosen for analysis with their respective descriptions from the CDC [Codebook](https://www.cdc.gov/brfss/annual_data/2017/pdf/codebook17_llcp-v2-508.pdf).
+
+The original dataset can be downloaded [here](https://drive.google.com/open?id=1u5Fu6oHnUapxbkQAhJo3uPt9JkITyDwW). The cleaned dataset used in this study can be downloaded [here](https://drive.google.com/file/d/1Uhs6VWlGVUhpbofnZH54kxbO752vt_D0/view?usp=sharing). 
+
+##Packages and Data Read-In
+
+**1. Data Read-In**
+
+```{r data, message = F, warning = F}
+##Preparation
+library(tidyverse)
+library(scales)
+
+if(!file.exists("./Data")){dir.create("Data")}
+
+health <- read_csv("./Data/Health2017.csv", guess_max = 69000)
+```
+
+**2. Data Selection**
+
+The following code selects the relevant columns for this project. 
+
+```{r variables}
+h17 <- health %>%
+  select(`_ASTHMS1`, `_RACE`, `_AGE_G`, `_BMI5CAT`, `_EDUCAG`, 
+         `INCOME2`, `_RFSMOK3`, `_TOTINDA`, SEX, ADDEPEV2,`_STATE`, 
+         ASTHMAGE, ASATTACK, ASERVIST, ASDRVIST, ASRCHKUP, ASACTLIM, 
+         ASYMPTOM, ASNOSLEP, ASTHMED3, ASINHALR)
+
+h17
+```
+
+##Data Cleaning
+
+
+__1. Naming Variables__
+
+The columns are then renamed to make it easier to read.
+
+```{r colnames}
+
+names(h17) <- c("AsthmaStatus", "Race", "AgeGroup", "BMICategory", 
+                "EducationLevel", "IncomeGroup", "CurrentSmoker", 
+                "Exercise", "Sex", "DepressiveDisorder", "State", 
+                "AsthmaAge", "Last12MonthsAttack", "ERVisit", "UrgentCare", 
+                "RoutineCheckUp","LimitActivities", "AsthmaSymptoms", 
+                "AsthmaSleepDiffi", "DaysWithMeds", "InhalerForAttack")
+
+```
+
+__2. Missing Values__
+
+The original data set assigns the values "7", "77", "777", "888", "9", "98", "99" or "999" to missing values, which represent "I don't know," "I don't remember," respondents refusal to answer questions, or missing responses due to other reasons. Since it wasn't clear which missing cases the numbers above represent, they were all replaced by "NAs." Blanks received similar treatment since they occur completely at random.
+
+```{r HNA}
+h_na <- h17 %>%
+  mutate(IncomeGroup = replace(IncomeGroup, IncomeGroup == 9, NA),
+         Sex = replace(Sex, Sex == 9, NA),
+         EducationLevel = replace(EducationLevel, EducationLevel == 9, NA),
+         Race = replace(Race, Race == 9, NA),
+         AgeGroup = replace(AgeGroup, AgeGroup == 9, NA),
+         AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == 9, NA),
+         Exercise = replace(Exercise, Exercise == 9, NA),
+         CurrentSmoker = replace(CurrentSmoker , CurrentSmoker == 9, NA),
+         DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 7 | 
+                                        DepressiveDisorder == 9 | DepressiveDisorder == " ", NA)) %>%
+
+    mutate(AsthmaAge = replace(AsthmaAge, AsthmaAge == 98 | AsthmaAge == 99 | 
+                                 AsthmaAge == " ", NA),
+         Last12MonthsAttack = replace(Last12MonthsAttack, Last12MonthsAttack == 7 | 
+                                        Last12MonthsAttack == 9 | Last12MonthsAttack == " ", NA),
+         ERVisit = replace(ERVisit, ERVisit == 98 | ERVisit == " ", NA),
+         UrgentCare = replace(UrgentCare, UrgentCare == 98 | UrgentCare == " ", NA),
+         RoutineCheckUp = replace(RoutineCheckUp, RoutineCheckUp == 98 |
+                                    RoutineCheckUp == 99 | RoutineCheckUp == " ", NA),
+         LimitActivities = replace(LimitActivities, LimitActivities == 777 | LimitActivities == 999 | 
+                                     LimitActivities == " ", NA),
+         AsthmaSymptoms = replace(AsthmaSymptoms, AsthmaSymptoms == 7 | AsthmaSymptoms == 9 | 
+                                    AsthmaSymptoms == " ", NA),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, AsthmaSleepDiffi == 7 | AsthmaSleepDiffi == 9 | 
+                                      AsthmaSleepDiffi == " ", NA),
+         DaysWithMeds = replace(DaysWithMeds, DaysWithMeds == 7 | DaysWithMeds == 9 | 
+                                  DaysWithMeds == " ", NA),
+         InhalerForAttack = replace(InhalerForAttack, InhalerForAttack == 7 | 
+                                      InhalerForAttack == 9 | InhalerForAttack == " ", NA))
+```
+
+
+__3. Data Coding__
+
+_3.1 Binary Variables_
+
+The following codes reassign dummy values to binary variables. Binary variables in this data set were represented by number 1 or 2. For consistency, they were standardized to number 0 and 1. This change also made it easier to run regression models later. 
+
+```{r binaryfix}
+hbinfix <- h_na %>%
+  mutate(Sex = as.numeric(Sex == ifelse(Sex == 2, 0, 1)),
+         DepressiveDisorder = as.numeric(DepressiveDisorder == ifelse(
+           DepressiveDisorder == 2, 0, 1)),
+         Exercise = as.numeric(Exercise == ifelse(Exercise == 2, 0, 1)),
+         CurrentSmoker = as.numeric(CurrentSmoker == ifelse(CurrentSmoker == 2, 1, 1)),
+         Last12MonthsAttack = as.numeric(Last12MonthsAttack == ifelse(
+           Last12MonthsAttack == 2, 0, 1)))
+```
+
+Notes:
+
+* For Sex: 0 represents Female, 1 represents Male, 
+* For Depressive Disorders: 1 = Respondent has a depressive disorder, 0 = Respondent doesn't report having a depressive disorder, 
+* For Exercise: 1 = Respondent reported having physical activities in the last 30 days, 0 = Respondent reported not having physical activities in the last 30 days,
+* For CurrentSmoker: 1 = Respondent reported having smoked in the last week, 0 = Respondent reported not having smoked in the last week,
+* For Last12MonthsAttack: 1 = Respondents had an asthma attack or an asthma episode during the 12 month period before the interview, 0 = Respondents had not had an attack or an episode for a year.
+
+
+_3.2 Non-binary Variables_
+
+Similar to binary variables, other categorical variables were also put into groups represented by integers. The following codes return the original meanings to the integer representations. The new variable names were modified from the questionnaire used to collect data for this data set.
+
+
+```{r nonbinaryfix}
+hfix <- hbinfix %>%
+  #mutate(AsthmaAge = replace(AsthmaAge, AsthmaAge == 97, 10)) %>%
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(11:20), "Age 11 to 20"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(21:30), "Age 21 to 30"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(31:40), "Age 31 to 40"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(41:50), "Age 41 to 50"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(51:60), "Age 51 to 60"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(61:70), "Age 61 to 70"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(71:80), "Age 71 to 80"),
+         #AsthmaAge = replace(AsthmaAge, AsthmaAge %in% c(81:96), "Age Above 80")) %>%
+  
+  mutate(LimitActivities = replace(LimitActivities, LimitActivities == 888, 0)) %>%
+  
+  mutate(ERVisit = replace(ERVisit, ERVisit %in% c(81:87), "More than 80 times"),
+         ERVisit = replace(ERVisit, ERVisit == 88, 0),
+         ERVisit = replace(ERVisit, ERVisit %in% c(1:4), "Less than 5 Times"),
+         ERVisit = replace(ERVisit, ERVisit %in% c(5:20), "5 to 20 times"),
+         ERVisit = replace(ERVisit, ERVisit %in% c(21:50), "21 to 50 times"),
+         ERVisit = replace(ERVisit, ERVisit %in% c(51:80), "51 to 80 times")) %>%
+  
+  mutate(UrgentCare = replace(UrgentCare, UrgentCare %in% c(81:87), "More than 80 times"),
+         UrgentCare = replace(UrgentCare, UrgentCare == 88, 0),
+         UrgentCare = replace(UrgentCare, UrgentCare %in% c(1:4), "Less than 5 Times"),
+         UrgentCare = replace(UrgentCare, UrgentCare %in% c(5:20), "5 to 20 times"),
+         UrgentCare = replace(UrgentCare, UrgentCare %in% c(21:50), "21 to 50 times"),
+         UrgentCare = replace(UrgentCare, UrgentCare %in% c(51:80), "51 to 80 times")) %>%
+  
+  mutate(RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp %in% c(81:87), "More than 80 times"),
+         RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp == 88, "None"),
+         RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp %in% c(1:4), "Less than 5 Times"),
+         RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp %in% c(5:20), "5 to 20 times"),
+         RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp %in% c(21:50), "21 to 50 times"),
+         RoutineCheckUp = replace(RoutineCheckUp, 
+                                  RoutineCheckUp %in% c(51:80), "51 to 80 times")) %>%
+  
+  mutate(AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 1, "Less than once a Week"),
+         AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 2, "Once or twice a week"),
+         AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 3, "More than twice, not every day"),
+         AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 4, "Every day, not all the time"),
+         AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 5, "Every day, all the time"),
+         AsthmaSymptoms = replace(AsthmaSymptoms, 
+                                  AsthmaSymptoms == 8, "Not at any time")) %>%
+  
+  mutate(AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 1, "One or Two"),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 2, "Three  or Four"),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 3, "Five"),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 4, "Six to Ten"),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 5, "More than Ten"),
+         AsthmaSleepDiffi = replace(AsthmaSleepDiffi, 
+                                    AsthmaSleepDiffi == 8, "None")) %>%
+  
+  mutate(DaysWithMeds = replace(DaysWithMeds, DaysWithMeds == 1, "1 to 14 days"),
+         DaysWithMeds = replace(DaysWithMeds, DaysWithMeds == 2, "15 to 24 days"),
+         DaysWithMeds = replace(DaysWithMeds, DaysWithMeds == 3, "25 to 30 days"),
+         DaysWithMeds = replace(DaysWithMeds, DaysWithMeds == 8, "None")) %>%
+  
+  mutate(InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 1, "1 to 4 times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 2, "5 to 14 times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 3, "15 to 29 times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 4, "30 to 59 times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 5, "60 to 99 times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 6, "100 or more times"),
+         InhalerForAttack = replace(InhalerForAttack, 
+                                    InhalerForAttack == 8, "Never")) %>%
+
+  mutate(BMICategory = replace(BMICategory, BMICategory == 1, "Underweight"),
+         BMICategory = replace(BMICategory, BMICategory == 2, "Normal"),
+         BMICategory = replace(BMICategory, BMICategory == 3, "Overweight"),
+         BMICategory = replace(BMICategory, BMICategory == 4, "Obese")) %>%
+  
+  mutate(Race = replace(Race, Race == 1, "White"),
+         Race = replace(Race, Race == 2, "Black"),
+         Race = replace(Race, Race == 3, "American Indian/Alaskan Native"),
+         Race = replace(Race, Race == 4, "Asian"),
+         Race = replace(Race, Race == 5, "Native Hawaiian/other Pacific Islander"),
+         Race = replace(Race, Race == 6, "Others"),
+         Race = replace(Race, Race == 7, "Multiracial, non-Hispanic"),
+         Race = replace(Race, Race == 8, "Hispanic")) %>%
+  
+  mutate(EducationLevel = replace(EducationLevel, 
+                                  EducationLevel == 1, "Did not Attend High School"),
+         EducationLevel = replace(EducationLevel, 
+                                  EducationLevel == 2, "Graduated High School"),
+         EducationLevel = replace(EducationLevel, 
+                                  EducationLevel == 3, "Attended College/Technical School"),
+         EducationLevel = replace(EducationLevel, 
+                                  EducationLevel == 4, "Graduated from College/Technical School")) %>%
+  
+  mutate(AgeGroup = replace(AgeGroup, AgeGroup == 1, "18 to 24"),
+         AgeGroup = replace(AgeGroup, AgeGroup == 2, "25 to 34"),
+         AgeGroup = replace(AgeGroup, AgeGroup == 3, "35 to 44"),
+         AgeGroup = replace(AgeGroup, AgeGroup == 4, "45 to 54"),
+         AgeGroup = replace(AgeGroup, AgeGroup == 5, "55 to 64"),
+         AgeGroup = replace(AgeGroup, AgeGroup == 6, "65 and above")) %>%
+  
+  mutate(IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 1, "less than $10,000"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 2, "$10,000 to $14,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 3, "$15,000 to $19,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 4, "$20,000 to $24,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 5, "$25,000 to $34,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 6, "$35,000 to $49,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 7, "$50,000 to $74,999"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 8, "$75,000 or above"),
+         IncomeGroup = replace(IncomeGroup, 
+                               IncomeGroup == 77 | IncomeGroup == 99 | 
+                                 IncomeGroup == " ", NA)) %>%
+  
+  mutate(AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == 1, "Current"),
+         AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == 2, "Former"),
+         AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == 3, "Never"))
+
+```
+
+
+
+
+__4. Finalized Dataset__
+
+The codes below arrange the columns in the data set into the desired order and split the data set into smaller ones.
+
+```{r finalData}
+health2017 <- hfix %>% 
+  select(AsthmaStatus, AgeGroup, Sex, Race, IncomeGroup, EducationLevel, 
+         BMICategory, CurrentSmoker, Exercise, DepressiveDisorder, State, 
+         AsthmaAge, Last12MonthsAttack, ERVisit, UrgentCare, RoutineCheckUp, 
+         LimitActivities, AsthmaSymptoms, AsthmaSleepDiffi, DaysWithMeds, 
+         InhalerForAttack)
+
+head(health2017)
+
+#write.csv(health2017, file = "Asthma2017.csv", row.names = FALSE)
+```
+
+
+##Variables Description
+
+Below is a summary of the variables, similar to that from previous study.
+
+*	AsthmaStatus: If a respondent currently, formerly or never had asthma
+
+*	Race: Respondents grouped by nine categories of race-ethnicity, with Hispanics grouped as a separate category
+
+*	AgeGroup: Reported age in five-year age categories calculated variable
+
+*	Sex: (binary) Female vs. Male
+
+*	BMICategory: Respondents' weight status by dividing reported weights by the square of their respective heights
+
+*	EducationLevel: Respondents' highest education level completed, sorted into four groups
+
+*	IncomeGroup: Respondents' reported income sorted into nine groups
+
+*	CurrentSmoker: (binary) Whether respondents smoked a cigarette within 30 days before the interview
+
+*	Exercise: (binary) Whether respondents engaged in physical activities within 30 days before the interview
+
+*	DepressiveDisorder: (binary) Whether respondents had been suffering from, or was diagnosed with one or more depressive disorders
+
+*	State: State FIPS code of where the respondents came from
+
+*	Last12MonthsAttack: (binary) Whether respondents had an asthma attack or an asthma episode during the 12 month period before the interview.
+
+*	AsthmaSymptoms: Number of times respondents experienced any symptom of asthma during the 30 day period before the interview
+
+*	AsthmaSleepDiffi: Number of days respondents had difficulties sleeping because asthma during the 30 day period before the interview
+
+*	DaysWithMeds: Number of days respondents took a prescription of asthma medication to prevent an asthma attack from occurring during the 30 day period before the interview
+
+*	InhalerForAttack: Number of times respondents used a prescription of asthma inhaler during an asthma attack to stop it during the 30 day period before the interview
+
+*	AsthmaAge: Age at first asthma diagnosis
+
+*	ERVisit: Number of times respondents visited the emergency room or an urgent care center because of asthma during the 12 month period before the interview
+
+*	UrgentCare: Number of times respondents specifically required urgent care for asthma during the 12 month period before the interview
+
+*	RoutineCheckUp: Number of routine check-ups for asthma during the 12 month period before the interview
+
+*	LimitActivities: Number of times respondents were unable to work or carry out activities because of asthma during the 12 month period before the interview

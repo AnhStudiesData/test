@@ -1,0 +1,35 @@
+# Introduction {#intro}
+
+##Analytics Questions
+
+In this study, the following questions would be answered using the 2017 data from The Behavioral Risk Factor Surveillance System (BRFSS):
+
+*1. Which state in the U.S. had the highest probability of finding a person suffering from asthma in 2017? Which state had the lowest possibility?*
+
+*2. Are the demographic characteristics and health risks factors related to asthma patients found in literature supported by this dataset?*
+
+*3. At what age was asthma most commonly diagnosed for the selected respondents? Which medical care(s) did they need and how often did they need it (them)?*
+
+*4. Could the likelihood of having asthma be predicted using logistic regression model using the associated demographic and health risk factors found in literature? If yes, how accurate were these predictions?* 
+
+## Analytics Goals
+
+###Descriptive Analytics Goals
+
+The descriptive analytics goals of this study were to:
+
+* explore the geographic distribution of asthmatics in the U.S. by state,
+
+* verify the demographic characteristics and health risk factors related to people with asthma found in literature
+
+* visualize the behaviors of those who reported having asthma. 
+
+###Predictive Analytics Goals
+
+The predictive analytics goal of this study was to test how accurately a binary logistic regression model could predict the likelihood a respondent having a specific set of characteristics would have asthma. This was a classification predictive problem.
+
+##Importance of this study
+
+As mentioned in previous study, asthma is a very common chronic respiratory disease where a person's airways to the lung are inflamed, narrowed, swollen, and often produce extra thickened mucus which make breathing difficult (Mayo Clinic, 2018). Millions of Americans are affected by asthma every year. Asthma may not pose a major problem to some people, but for others, it can gravely interfere with daily activities. An asthma-attack can be life-threatening. Understanding the medical needs of asthma patients, in which states were asthma patients most and least likely to be found, is important for asthma prevention measures, and reliefs of asthma symptoms. Furthermore, having an algorithm to accurately predict who would be more in danger of suffering from asthma, will be extremely beneficial to medical providers to devise prevention methods, and better prepare and allocate resources for diagnosis and necessary treatments.
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is a state-based cross-sectional telephone survey initiated by the Centers for Disease Control and Prevention (CDC). The state health departments have been conducting the survey monthly over land-lines and cellular telephones using a standardized questionnaire and other assistance from the CDC. The survey data sets contain relevant data that are useful for asthma analysis under the scope of this project.

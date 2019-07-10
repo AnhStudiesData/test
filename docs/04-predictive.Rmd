@@ -1,0 +1,202 @@
+#Predictive Analytics {#predictive}
+
+##Logistic Regression - Full Model Fit Statistic
+
+```{r data_and_library_for_predictive, message = F, warning = F}
+library(tidyverse)
+library(scales)
+
+##Predictive modeling
+library(boot)
+library(coefplot)
+library(ROCR)
+```
+
+```{r readPredictive, echo=F, message=F, warning=F}
+
+if(!file.exists("./Data")){dir.create("Data")}
+health2017 <- read_csv("./Data/Asthma2017.csv", guess_max = 69000)
+```
+
+Binary Logistic Regression Model was run on the full data, using all demographic and health risk factors: "AgeGroup", "Sex", "Race", "Income Group", "EducationLevel", "CurrentSmoker", "Exercise", "BMICategory", and "DepressiveDisorders" as predictors, predicting the log-odd of the response variable "AsthmaStatus". All predictors were categorical variables, presented as factors with levels in the logistic regression model.
+
+The response variable "AsthmaStatus" was originally a categorical variable of three levels. To perform binary logistic regression model, it was converted to a binary variable, with 1 representing the "Current" status, or respondents "currently" having asthma at the time of the survey, and 0 representing both "Former" and "Never" statuses, or respondents "not currently" having asthma at the time of the survey.  
+
+Logistic regression was performed using the glm() function in package {stat}, with "family=binomial(link="logit")". _Exhibit 17_ displayed the algorithm and the coefficient table of each level of predictors. All predictors were significant in predicting the log-odd of the response variable.
+
+
+A coefficient plot created in _Exhibit 18_ was the visualization of the significance of the coefficients of all predictors. Appendix 9 transformed the log-odd to odds and probabilities as another way of presenting the same results.
+
+_Exhibit 17 - Logistic Regression Coefficients (Full Dataset)_
+
+```{r LogRegFull}
+asthma_lm <- health2017 %>% 
+  dplyr::select(AsthmaStatus, AgeGroup, Sex, Race, IncomeGroup, EducationLevel, BMICategory, CurrentSmoker, Exercise, DepressiveDisorder) %>% 
+  filter(!is.na(AsthmaStatus), !is.nan(AsthmaStatus)) %>%
+  mutate(AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == "Current", 1),
+         AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == "Former", 0),
+         AsthmaStatus = replace(AsthmaStatus, AsthmaStatus == "Never", 0)) %>%
+  as_factor()
+
+asthma_lm$AsthmaStatus <- as.numeric(asthma_lm$AsthmaStatus)
+
+asthma_lm$Race <- relevel(as_factor(asthma_lm$Race), ref="Asian")
+asthma_lm$EducationLevel <- relevel(as_factor(asthma_lm$EducationLevel), 
+                                    ref="Did not Attend High School")
+
+asthma_narm <- asthma_lm[complete.cases(asthma_lm),]
+asthma_narm <- data.frame(asthma_narm)
+
+asthma.lr <- glm(AsthmaStatus ~., family=binomial(link="logit"), data = asthma_narm)
+
+summary.full <- summary(asthma.lr)
+
+```
+
+a. *Likelihood of having Asthma Decreases with Increases in Age*
+
+```{r Age}
+summary.full$coefficients[2:6,]
+```
+
+All coefficients in the table below were negative. With "Age Group 18 to 24" being the reference level, the negative coefficients suggested the higher the age group a respondent belonged in, the less likely he/she would have reported having asthma. This result agreed to descriptive analytics results.
+
+
+b. *Likelihood of having Asthma is Higher for Female*
+
+```{r Sex}
+summary.full$coefficients[7,]
+```
+
+As Sex moved from 0 to 1, log-likelihood of having asthma decreased. This means female respondents were more likely to then suffered from asthma compared to male respondents.
+
+
+c. *Likelihood of having Asthma Differs among Races*
+
+```{r Races}
+summary.full$coefficients[8:14,]
+```
+
+Compared to Asian, which was selected as the reference level, all other races had higher asthma prevalence, with the Multiracial group having the highest difference in log-odd.
+
+d. *Likelihood of having Asthma Decreases with Increases in Income *
+
+```{r Income}
+summary.full$coefficients[15:21,]
+```
+
+Income Group from 10,000 USD to 14,999 USD set as the reference level, a respondent earning less than that was more likely to have asthma (as shown by the positive coefficient), while for other Income Group, as income increased, the likelihood decreased (illustrated by the increasingly more negative coefficients).
+
+
+e. *Likelihood of having Asthma Differs among Education Level*
+
+```{r Education}
+summary.full$coefficients[22:24,]
+```
+
+From descriptive analytics, the probability of respondents having asthma given they had graduated from college/technical school was the lowest. It was expected that the coefficient for this level would be lowest. However, compared to the set reference level (Education Level - Did not Attend High School), Education Level - Graduated from High School had the most negative coefficient, indicating that respondents who only graduated high school had an even lower log-odd of having asthma than those achieved higher level of education. The log-likelihood of having asthma were similar between those attended and graduated from college/technical school. 
+
+
+f. *Likelihood of having Asthma Decreases with Decreases in BMI *
+
+```{r BMI}
+summary.full$coefficients[25:27,]
+```
+
+With Normal Weight being the set reference level, all other BMI Category coefficients were positive, with Obese being the most negative - Obese respondents were the most likely to have asthma.
+
+
+g. *Likelihood of having Asthma Decreases for Non-Smokers*
+
+```{r Smoke}
+summary.full$coefficients[28,]
+```
+
+The negative coefficient as CurrentSmoker variable "moved" from 0 to 1 indicated that smokers were more likely to have asthma.
+
+
+h. *Likelihood of having Asthma Decreases among Physically Active People*
+
+```{r Exercise}
+summary.full$coefficients[29,]
+```
+
+Similarly, the negative coefficient for Activeness supported the descriptive analytics results - Respondents who had not engaged in physical activities 30 days prior to the interview were more likely to have asthma.
+
+
+i. *Likelihood of having Asthma Increases among Depressed People*
+
+```{r Depressed}
+summary.full$coefficients[30,]
+```
+
+A respondent with some sort of depressive disorder were much more likely to suffer from asthma, as suggested from the positive coefficient.
+
+_Exhibit 18 - Logistic Regression Coefficients Plot_
+
+```{r coefplot, fig.height=9, fig.width=7}
+coefplot(asthma.lr, color = 'royalblue4')
+
+c("2LL"=-2*logLik(asthma.lr), "Deviance"=deviance(asthma.lr), "AIC"=AIC(asthma.lr))
+```
+
+_Exhibit 19 - Transformed Log-Odd, Odds and Probability_
+
+```{r coef}
+log.odds = coef(asthma.lr) 
+
+odds <- exp(coef(asthma.lr)) 
+
+prob = odds/(1+odds) 
+
+stat = cbind("Log-Odds"=log.odds, "Odds"=odds, "Probabilities"=prob)
+
+stat
+```
+
+##Logistic Regression Predictive Accuracy
+
+###Data Partitioning and Logistic Regression Model Setup
+
+Since the response variable - *Asthma Status* was binary, again, logistic regression was performed, using the glm() function, with "family=binomial(link="logit")." The data was partitioned into a training set - a sample of 60% of observations, and a test set - the rest of the data. _Exhibit 20_ presented the partitioning set up and the algorithm.
+
+_Exhibit 20 - Logistic Regression Machine Learning (For Trained subset)_
+
+```{r LogRegPart}
+set.seed(12345)
+training <- sample(1:nrow(asthma_narm), 0.6*nrow(asthma_narm))
+asthma.training <- asthma_narm[training,]
+asthma.test <- seq(1:nrow(asthma_narm))[-training]
+asthma.test.results = asthma_narm[-training,1]
+
+
+asthma.lr.ML <- glm(AsthmaStatus ~., family=binomial(link="logit"), data = asthma.training)
+
+summary(asthma.lr.ML)
+```
+
+###Confusion Matrix and ROC Curve
+
+To evaluated the performance of the logistic regression model in correctly classifying the test subset's respondents in "Having Asthma" and "Not Having Asthma" groups, a Receiver Operating Characteristics (ROC) Curve was drawn to visualize the trade off between Sensitivity and Specificity of this model. The curve was constructed using the prediction{ROCR} and performance{ROCR} functions (*Exhibit 21*). The area under the ROC curve was close to 0.67, which was higher than 0.5, indicating that the model performed better than chance. 
+
+A confusion matrix was constructed to better evaluate how well the logistic regression model developed from the train subset predicted the test subset, by Accuracy Rate, Error Rate, Sensitivity (True Positive), Specificity (True Negative), and False Positive. (*Exhibit 21*)
+
+Since only a small proportion of the dataset gave a positive response (less than 10% of the sampled observations reported "currently having asthma" in the 2017 survey), the classification threshold was set to a low level of 16%. This means if the predicted probability of having asthma was more than 16%, the respondent was classified as having asthma, and vice versa, a predicted probability of 16% or below was classified as not having asthma. 
+
+At 16% threshold, the model predicted with 84% accuracy rate, 16% error rate, 29% True-Positive (Sensitivity) Rate, and 90% True-Negative (Specificity) Rate. Thus, 30% of the times, if a respondent had a calculated asthma probability of more than 16%, the model predicted accurately that he/she would have asthma; 90% of the times, if a respondent had a calculated asthma probability of 16% or below, the model predicted accurately that he/she would not have asthma.
+
+_Exhibit 21 - ROC Curve_
+
+```{r ROC}
+asthma.test.probabilities <- predict(asthma.lr.ML, asthma_narm, type = "response")[asthma.test]
+
+pred <- prediction(asthma.test.probabilities, asthma.test.results) 
+
+perf <- performance(pred,"tpr","fpr")
+plot(perf, colorize=T)
+
+
+auc <- performance(pred,"auc")
+
+c(auc@y.name[[1]], auc@y.values[[1]])
+```

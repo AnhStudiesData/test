@@ -1,0 +1,25 @@
+--- 
+title: "US Asthma Prevalence Study"
+author: "Anh Do (Alice)"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: AnhStudiesData/USAsthmaPrevalenceStudy
+url: 'https\://anhstudiesdata.github.io/USAsthmaPrevalenceStudy/'
+---
+
+# Abstract {-}
+
+Every year, millions of Americans are diagnosed with asthma - a life-threatening condition. Studying demographic trends and risk factors associated with asthma is important for asthma prevention measures, and treatments of asthma symptoms. Understanding the medical needs of asthma patients, in which states were asthma patients most and least likely to be found, is important for asthma prevention measures, and reliefs of asthma symptoms. Using the data from the CDC, the author found that the relationships between asthma status and lifestyle or behavioral risk factors found in this report seem to be similar to those found by previous studies. There was a relationship between having asthma and being obese, smoking, less intensely or frequently engaging in physical activities and having depressive disorders. The demographic distributions of people reported currently having asthma were also relatively consistent with previous years' reports. These risk factors and demographic characteristics could also be used to predict if an American had asthma to 84% accuracy and 90% true-positive rate, using logistic regression. The author looked forward to continuing this research, examining the change in asthma prevalence over time, incorporating more features, and cross-validating simple logistic regression with other predictive techniques to find the most useful predictive model.
+
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'bookdown', 'knitr', 'rmarkdown'
+), 'packages.bib')
+```

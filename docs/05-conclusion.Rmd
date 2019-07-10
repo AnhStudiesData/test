@@ -1,0 +1,46 @@
+# Conclusion and Further Research {#Conclusion}
+
+
+##Descriptive Analytics: Data Supported Literature Research
+
+The relationships between asthma status and lifestyle or behavioral risk factors found in this report seem to be similar to those found by previous studies: that is there is a relationship between having asthma and being obese, smoking, less intensely or frequently engaging in physical activities and having depressive disorders. The demographic distributions of people reported currently having asthma were also relatively consistent with previous years' reports. There didn't appear to be a surprising change in the distribution and trends of asthma prevalence among Americans. 
+
+Asthma was most commonly diagnosed among children and young adults (age 20 or younger). Less than half of asthmatics had not suffer from an attack 12 months prior to the survey, but more than half had symptoms twice a week or less. Among those who had an attack, less than half needed emergency care and ER support. Inhaler usage was also low among all respondents.
+
+##Predictive Analytics: Logistic Regression Can Predict If an American Has Asthma
+
+
+All demographic and risk factors predictors were significant in predicting the likelihood of asthma. The interpretation generally did not differ considerably from descriptive analytics results, except for Education Level.
+
+Machine learning logistic regression algorithm with a 60% train subset classify the asthmatics correctly 29% of the times, and the non-asthmatics correctly 90% of the times, using a classification threshold of 16%. The predictive accuracy of 84% and error rate of 16% were acceptable, especially when the area under the ROC curve suggested the model performed better than chance.
+
+A [ShinyApp](https://anhstudiesdata.shinyapps.io/USAsthmaStudy2017/) was designed to display selected descriptive and predictive analytics results from both studies.
+
+
+##Potentials for further research
+
+###Descriptive Analytics
+
+__Currently vs. Formerly Having Asthma__
+
+It would be interesting to look at factors relating to the differences across variables between the distributions of respondents reported currently having asthma, versus those who reported formerly having asthma. The CDC conducts an Asthma Call-Back survey annually, that contains more details on asthma status, factors affecting asthma status and how asthma interferes with patients' daily activities. Information from the Asthma Call-Back Survey is reported in the master annual data set, but is not yet standardized. The latest results available were from 2015 so they could not be used for comparison. 
+
+__Asthma and Children__
+
+Asthma is more prevalence among children from age 0 to 17 than among adults. The data set analyzed in this project did not include information about children with asthma. Future research should dive into more current demographic characteristics of children with asthma and their families. 
+
+__Asthma Trends Over Time__
+
+Demographic and socioeconomic characteristics of asthmatic Americans change over time, as shown in previous research (NCHS, 2012). These trends have been described and reported until 2015. Understanding recent trends would be useful for the public, medical institutions and pharmaceutical companies. 
+
+##Challenges and Future Research
+
+- Data was collected from land-line phone survey. The sampled population using land-line telephones were not representative of the entire U.S. population, urging future researchers to find better survey sampling and data gathering methods.
+
+- Only very few asthmatic respondents were contacted for the asthma survey, generating a very small dataset with large number of variables the resulted in low degree of freedom, affecting predictive analytics results. If possible, a larger and more complete dataset for asthma call-back survey data would be useful for future analysis.
+
+- Missing data occurred randomly across data columns and rows were all removed for the glm() function to run properly. These data had the potential to drastically changed the modeling results, prompting future research to look into other predictive models such as trees, multinomial logistic regression, Least Discriminant Analysis (LDA), etc.
+
+- The majority of the codes in this document may not be reproducible for future dataset. More universal functions could be developed to make analysis more repeatable.
+
+- Due to time constraint, this study did not look into the change in asthma prevalence, distribution and significant of predictors over time. This could be a promising area for future research, where time-series analysis, regression with lagging variables, etc. could be performed for visualization and better predictive modeling.

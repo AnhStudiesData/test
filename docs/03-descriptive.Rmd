@@ -1,0 +1,582 @@
+#Descriptive Analytics {#descriptive}
+
+
+##General Description
+
+According to the data collect in 2017, about 13% of respondents reported currently or formerly having asthma, and about 86% reported never having asthma (Exhibit 1). Since the proportion of respondents with asthma was relatively small, it's likely that the distribution and characteristics would be affected by those of the whole data set population. Therefore, it would be more informative to look at the data in terms of proportion and conditional probability:
+
+$P(Asthma \mid Variable) = \frac{P(Asthma \cap Variable)} {P(Variable)}$
+
+The function in _Exhibit 2_ calculates the probability a respondent had asthma, formerly or currently, given that person belonged to a variable group. 
+
+_Exhibit 1 - Overview of the Data_
+
+```{r library_and_data, message = F, warning = F}
+##Visualisation libraries
+library(tidyverse)
+library(scales)
+library(viridis)
+library(cowplot)
+library(gridExtra)
+library(grid)
+library(usmap)
+```
+```{r dataViz, echo=F, message=F, warning=F}
+if(!file.exists("./Data")){dir.create("Data")}
+health2017 <- read_csv("./Data/Asthma2017.csv", guess_max = 69000)
+
+#remove missing values for AsthmaStatus only
+health2017_narm <- health2017 %>%
+  filter(!is.na(AsthmaStatus))
+
+#Data for all respondents who reported formerlly or currently having asthma 
+asthma2017 <- health2017 %>%
+  filter(AsthmaStatus == "Current" | AsthmaStatus == "Former")
+
+#Data for all respondents who reported currently having asthma
+curr_ast_17 <- asthma2017 %>%
+  filter(AsthmaStatus == "Current")
+
+curr_ast_17
+
+#Data for all respondents who reported formerlly having asthma
+form_ast_17 <- asthma2017 %>%
+  filter(AsthmaStatus == "Former")
+
+form_ast_17
+```
+
+```{r asthmasummary, fig.height = 2, fig.width = 6}
+DF1_Summary_By_Asthma_Status <- health2017 %>% 
+  group_by(AsthmaStatus) %>%
+  summarise(Count = n(), Percentage_of_Population = round(n()/450016*100, 2)) %>%
+  arrange(desc(Count))
+
+DF1_Summary_By_Asthma_Status
+
+```
+
+_Exhibit 2 - Conditional Probability Function_
+
+```{r function}
+Conditional_Probability <- 
+  function(variable, VarProb, InterProp, df1 = health2017_narm, df2 = asthma2017) {
+  
+  variable <- enquo(variable)
+
+  VarProb <- df1 %>%
+    group_by(!!variable) %>%
+    summarise(VariableProbability = n()/450016*100)
+  
+  InterProb <- df2 %>%
+    group_by(!!variable) %>%
+    summarise(IntersectionProbability = n()/450016*100)
+  
+  CombinedTable <- cbind(VarProb, InterProb[,2])
+
+  ConditionalProbability <- CombinedTable %>%
+    mutate(AsthmaPrevalence = round(IntersectionProbability/VariableProbability*100, 2)) %>%
+    select(!!variable, AsthmaPrevalence) %>%
+    arrange(desc(AsthmaPrevalence))
+  
+  return(ConditionalProbability)
+}
+```
+
+
+##Asthma Prevalence
+
+###Asthma Status vs. Age Groups
+
+From the data frame and the two grey graphs in _Exhibit 3_, most respondents were 65 years old or above, but the proportion of them having asthma was the lowest compared to other age groups (at 11.8%). In contrast, respondents aged 18 to 24 were the least represented in this data set, but the proportion of them reported having asthma was the highest (at 16.7%). 
+
+_Exhibit 3 - Asthma Prevalence by Age Group_
+
+```{r age, fig.width = 10, fig.height = 4}
+AsAPlot <- asthma2017 %>%
+  ggplot(aes(x = AgeGroup)) +
+  geom_bar() +
+  coord_flip() +
+  theme(axis.title.x = element_blank()) +
+  ggtitle("Having Asthma")
+
+TotAPlot <- health2017_narm %>%
+  ggplot(aes(x = AgeGroup)) +
+  geom_bar(fill = "dark grey") +
+  coord_flip() +
+  theme(axis.title = element_blank(),
+        axis.text.y = element_blank()) +
+  ggtitle("All Respondents")
+
+Distributions_By_Age_groups <- plot_grid(AsAPlot, TotAPlot)
+
+Asthma_Status_By_Age_Groups <- asthma2017 %>%
+  ggplot() +
+  geom_bar(aes(x = AgeGroup, fill = AsthmaStatus)) +
+  facet_grid(~AsthmaStatus,  scale = "free") +
+  coord_flip() +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = FALSE)+
+  ggtitle("Asthma Status By Age Groups")
+
+DF2_Asthma_Proportion_By_Age_groups <- Conditional_Probability(AgeGroup)
+
+Distributions_By_Age_groups
+
+Asthma_Status_By_Age_Groups
+
+DF2_Asthma_Proportion_By_Age_groups
+```
+
+
+By asthma status, _Exhibit 3_ showed the proportion of respondents reported currently having asthma was similar to the overall proportion of respondents reported currently or formerly having asthma. In other words, the light blue graph and the darker grey graph look similar. The proportion formerly having asthma, on the other hand, shows some obvious differences: there were significantly more respondents in the age groups 18 to 24, 25 to 34, and 35 to 44. More respondents age 25 to 34 reported formerly having asthma than those from the 18 to 24, 35 to 44 and 45 to 54 age groups, which did not follow the distributions in the two grey graphs. This result is consistent with literature findings.
+
+_Exhibit 4_ below showed that asthma was more commonly diagnosed for children or teenage (20 and below). This is expected since asthma tends to be more prevalent among children, and showed symptoms since childhood.
+
+_Exhibit 4 - Age when Asthma was Diagnosed_
+
+```{r AgeDiagnosed}
+Asthma_Diagnosed_Age <- asthma2017 %>%
+  filter(!is.na(AsthmaAge))%>%
+  ggplot(aes(x = AsthmaAge)) +
+  geom_bar(fill = "navy") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Asthma Diagnosed Age")
+
+Asthma_Diagnosed_Age
+```
+
+###Asthma Status vs. Sex
+
+_Exhibit 5 - Asthma Prevalence by Sex_
+
+```{r sex, fig.width = 8, fig.height = 3}
+sex1 <- asthma2017 %>%
+  mutate(Sex = replace(Sex, Sex == 0, "Female"),
+         Sex = replace(Sex, Sex == 1, "Male")) 
+
+sex2 <- health2017_narm %>%
+  mutate(Sex = replace(Sex, Sex == 0, "Female"),
+         Sex = replace(Sex, Sex == 1, "Male"))
+
+TotSplot <- sex2 %>% 
+  ggplot(aes(x = Sex, fill = Sex)) + 
+  geom_bar() + 
+  guides(fill = F) + 
+  scale_fill_brewer(palette = "Accent") +
+  theme(axis.title.y = element_blank()) +
+  ggtitle("All Respondents By Sex")
+
+StatusS <- sex1 %>%
+  ggplot(aes(x = AsthmaStatus, fill = Sex)) + 
+  geom_bar(position = "dodge", color = "white") + 
+  theme(axis.title.y = element_blank()) + 
+  scale_fill_brewer(palette = "Accent") +
+  guides(fill = FALSE) +
+  ggtitle("Asthma Status By Sex")
+
+Graphs_Of_Asthma_By_Sex <- plot_grid(TotSplot, StatusS)
+
+DF3_Asthma_Proportion_By_Sex <- Conditional_Probability(Sex) %>% 
+   mutate(Sex = replace(Sex, Sex == 0, "Female"),
+         Sex = replace(Sex, Sex == 1, "Male"))
+
+Graphs_Of_Asthma_By_Sex
+
+DF3_Asthma_Proportion_By_Sex
+```
+
+In _Exhibit 5_ above, there were more female respondents than male respondents in this data set. The percentage of female respondents reported currently or formerly having asthma was about 1.5 times higher than that of male respondents. From the graph on the right, this drastic difference came from the proportion of female respondents currently having asthma being more than twice that of male respondents. This result is consistent with previous trends.
+
+###Asthma Status vs. Race
+
+_Exhibit 6 - Asthma Prevalence by Race_
+
+```{r race, fig.width = 7, fig.height = 3}
+
+DF4_Asthma_Proportion_By_Race <-  Conditional_Probability(Race)
+
+DF4_Asthma_Proportion_By_Race
+```
+
+From _Exhibit 6_, the vast majority of surveyees were White, yet the proportion of white respondents having asthma was relatively low. The proportions of Multiracial and American Indian/Alaskan Native respondents having asthma were significantly higher than those of other races. The number of Black respondents currently having asthma was higher than that of Hispanic respondents, but slightly fewer Black respondents reported formerly having asthma than Hispanic respondents. This explains how Black ranked third in the data frame, while Hispanic ranked lower. This trend is similar to previous years'. 
+
+###Asthma Status vs. Income Level
+
+_Exhibit 7_ showed  an inverse relationship between income and the likelihood of respondents reporting currently or formerly having asthma. Respondents in the lowest income group were almost twice more likely to report currently or formerly having asthma than those in the highest income group.
+
+_Exhibit 7 - Asthma Prevalence by Income Group_
+
+```{r IncomeGroup, fig.width = 7, fig.height = 3}
+DF5_Asthma_Proportion_By_Income_Group <-  Conditional_Probability(IncomeGroup)
+
+DF5_Asthma_Proportion_By_Income_Group
+
+```
+
+###Asthma Status vs. Education Level
+
+_Exhibit 8 - Asthma Prevalence by Education Level_
+
+```{r Edu, fig.width = 7, fig.height = 3}
+
+DF6_Asthma_Proportion_By_Education_Level <-  Conditional_Probability(EducationLevel)
+
+DF6_Asthma_Proportion_By_Education_Level
+```
+
+_Exhibit 8_ above displayed that the proportion of respondents who did not attend high school or attended college/technical school reported currently having asthma was higher. More respondents who attended college/technical school reported currently having asthma than formerly having asthma. A smaller proportion of respondents who graduated from college/technical school reported having asthma at all. From the table, 16.9% of respondents who did not attend high school, followed by 14.6% of respondents who attended college/technical school reported currently or formerly having asthma; only 12.3% of respondents who graduated from college/technical school reported having asthma at all. The relationship between education levels and asthma status needs further investigation.
+
+###Asthma Status vs. Smoker Status
+
+_Exhibit 9 - Asthma Prevalence by Smoker Status_
+
+```{r smoke, fig.width = 8, fig.height = 3}
+sm1 <- asthma2017 %>%
+  mutate(CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 0, "Yes"),
+         CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 1, "No"))
+
+sm2 <- health2017_narm %>%
+  mutate(CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 0, "Yes"),
+         CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 1, "No"))
+
+TotSmplot <- sm2 %>% 
+  ggplot(aes(x = CurrentSmoker, fill = CurrentSmoker)) + 
+  geom_bar() + 
+  guides(fill = F) + 
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  ggtitle("All Respondents Smoker Status")
+
+StatusSm <- sm1 %>%
+  ggplot(aes(x = AsthmaStatus, fill = CurrentSmoker)) + 
+  geom_bar(position = "dodge") + 
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  guides (fill = F) +
+  ggtitle("Asthma by Smoker Status")
+
+Distributions_By_Smoker_Status <- plot_grid(TotSmplot, StatusSm)
+
+DF7_Asthma_Proportion_By_Smoker_Status <-  Conditional_Probability(CurrentSmoker) %>% 
+  mutate(CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 0, "Yes"),
+         CurrentSmoker = replace(CurrentSmoker, CurrentSmoker == 1, "No"))
+
+Distributions_By_Smoker_Status
+
+DF7_Asthma_Proportion_By_Smoker_Status
+
+```
+
+The vast majority of respondents in this data set were not current smokers (most of them did not report smoking a cigarette 100 days before the survey day). The proportion of smokers who also reported currently having asthma seem to be higher than that of non smokers, as shown by the higher blue bar under the "Current" group in the "Asthma by Smoker Status" graph. The data frame in _Exhibit 9_ above agrees with this observation, showing the percent of smokers who reported having asthma to be 1.5 times that of non-smokers. This observation agrees to that of previous studies (Mayo Clinic, 2018).
+
+###Asthma Status vs. Physical Activities
+
+_Exhibit 10.1 - Asthma Prevalence by Physical Activities_
+
+```{r exercise, fig.width = 8, fig.height = 3}
+ex1 <- asthma2017 %>%
+  mutate(Exercise = replace(Exercise, Exercise == 0, "No"),
+         Exercise = replace(Exercise, Exercise == 1, "Yes"))
+
+ex2 <- health2017_narm %>%
+  mutate(Exercise = replace(Exercise, Exercise == 0, "No"),
+         Exercise = replace(Exercise, Exercise == 1, "Yes"))
+
+TotExplot <- ex2 %>% 
+  ggplot(aes(x = Exercise, fill = Exercise)) + 
+  geom_bar(color = "light grey") + 
+  guides(fill = F) + 
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  ggtitle("All Respondents Physical Activities")
+
+StatusEx <- ex1 %>%
+  ggplot(aes(x = AsthmaStatus, fill = Exercise)) + 
+  geom_bar(position = "dodge", color = "light grey") + 
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  guides (fill = F) +
+  ggtitle("Asthma by Physical Activities")
+
+Distributions_By_Physical_Activities <- plot_grid(TotExplot, StatusEx)
+
+DF8_Asthma_Proportion_By_Physical_Activities <- Conditional_Probability(Exercise) %>% 
+  mutate(Exercise = replace(Exercise, Exercise == 0, "No"),
+         Exercise = replace(Exercise, Exercise == 1, "Yes"))
+
+Distributions_By_Physical_Activities
+
+DF8_Asthma_Proportion_By_Physical_Activities
+```
+
+
+The majority of respondents reported taking part in physical activities in the month before the interview day. However, a third of respondents who reported currently having asthma did not engage in any physical activities 30 days before the survey day. The data frame in _Exhibit 10.1_ also supports this observation, as the proportion of respondents who reported ever having asthma and did not exercise was slightly higher than those who did exercise. This is likely because it is physically more challenging and even not medically beneficial for asthmatic patients to engage in the same level of physical activities as non-asthmatic people, or even any physical activities at all. 
+
+_Exhibit 10.2 - How much Asthma Limit Daily Activities_
+
+```{r LimitedActivities}
+DF8.1_Days_Limited_Activities <- asthma2017 %>%
+  filter(!is.na(LimitActivities)) %>%
+  summarize(Mean_Number_Of_Days = mean(LimitActivities),
+            Largest_Number_Of_Days = max(LimitActivities),
+            Smallest_Number_Of_Days = min(LimitActivities)) 
+
+DF8.1_Days_Limited_Activities
+```
+
+```{r MaxMinLimAct}
+DF8.2_Max_Min_Days_Limited_Activities <- asthma2017 %>%
+  filter(LimitActivities == 0 | LimitActivities == 365) %>%
+  group_by(LimitActivities) %>%
+  summarize(count = n())
+
+DF8.2_Max_Min_Days_Limited_Activities
+```
+
+On average, respondents currently suffering from asthma had difficulties engaging in daily activities for 39 days. There were respondents who reported having difficulties every day (*Exhibit 10.2*).
+
+
+###Asthma Status vs. Depressive Disorders
+
+According to research studies summarized in WebMD, people who are diagnosed with asthma have a higher chance of having depressive disorders (Bruce, 2009). The data set supports this research results. From _Exhibit 11_ less than one fifth of all respondents in this data set reported having any depressive disorders; but among those who reported currently having asthma, more than a third reported also having some kinds of depressive disorders; and for those who reported formerly having asthma, the proportion was about one fourth. The data frame also aligned with this observation: about 23.6% of respondents who reported having depressive disorders also reported currently or formerly having asthma; only 11.1% of respondents who did not report having depressive disorders also reported having asthma.
+
+_Exhibit 11 - Asthma Prevalence and Depressive Disorders_
+
+```{r Depression, fig.width = 8, fig.height = 3}
+d1 <- asthma2017 %>%
+  mutate(DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 0, "No"),
+         DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 1, "Yes"))
+
+d2 <- health2017_narm %>%
+  mutate(DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 0, "No"),
+         DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 1, "Yes"))
+
+TotDPlot <- d2 %>% 
+  ggplot(aes(x = DepressiveDisorder, fill = DepressiveDisorder)) + 
+  geom_bar(color = "brown") + 
+  guides(fill = F) + 
+  scale_fill_brewer(palette = "Spectral") +
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  ggtitle("All Respondents Depressive Disorder")
+
+StatusD <- d1 %>%
+  ggplot(aes(x = AsthmaStatus, fill = DepressiveDisorder)) + 
+  geom_bar(color = "brown", position = "dodge") + 
+  scale_fill_brewer(palette = "Spectral") +
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank()) +
+  guides (fill = F) +
+  ggtitle("Asthma by Depressive Disorder")
+
+Distributions_By_Depressive_Disorders <- plot_grid(TotDPlot, StatusD)
+
+DF9_Asthma_Proportion_By_Depression_Disorders <- Conditional_Probability(DepressiveDisorder) %>% 
+  mutate(DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 0, "No"),
+         DepressiveDisorder = replace(DepressiveDisorder, DepressiveDisorder == 1, "Yes"))
+
+Distributions_By_Depressive_Disorders
+
+DF9_Asthma_Proportion_By_Depression_Disorders
+```
+
+
+
+###Asthma Status vs. BMI Categories
+
+_Exhibit 12 -  Asthma Prevalence by Weight Groups_
+
+```{r weight, fig.width = 7, fig.height = 3}
+TotWPlot <- health2017_narm %>% ggplot() +
+  geom_bar(aes(x = 1, fill = BMICategory), color = "dark green") +
+  coord_polar(theta = "y") +
+  scale_fill_brewer (palette = "Paired") + 
+  xlim(0, 1.5) +
+  geom_text(aes(x = 0, y = 1, label = "All"))+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank()) 
+
+
+CWAsPlot <- curr_ast_17 %>% ggplot() +
+  geom_bar(aes(x = 1, fill = BMICategory), color = "dark green") +
+  coord_polar(theta = "y") +
+  scale_fill_brewer (palette = "Paired") +
+  guides (fill = FALSE) +
+  xlim(0, 1.5) +
+  geom_text(aes(x = 0, y = 1, label = "Current"))+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank()) 
+
+FWAsPlot <- form_ast_17 %>% ggplot() +
+  geom_bar(aes(x = 1, fill = BMICategory), color = "dark green") +
+  coord_polar(theta = "y") +
+  scale_fill_brewer (palette = "Paired") +
+  guides (fill = FALSE) + 
+  xlim(0, 1.5) +
+  geom_text(aes(x = 0, y = 1, label = "Former"))+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())
+
+Graphs_Of_Asthma_Status_By_BMI_Categories <- plot_grid(CWAsPlot, FWAsPlot)
+
+
+DF10_Asthma_Proportion_By_BMI_Categories <- Conditional_Probability(BMICategory) 
+  
+Graphs_Of_Asthma_Status_By_BMI_Categories
+
+grid.arrange(TotWPlot, bottom = "Distribution of BMI Category")
+
+DF10_Asthma_Proportion_By_BMI_Categories
+```
+
+From the donut charts in _Exhibit 12_, the BMI distribution of respondents who reported formerly having asthma was similar to that of all respondents, but more respondents who reported currently having asthma were also obese. The data frame agrees to this observation: while about 10% of respondents in the normal and overweight groups reported having asthma currently or formerly, the proportion was 17.7% for the obese group. 15% of underweight respondents reported having asthma either currently or formerly, more than those of the normal and overweight groups. This observation is supported by other studies (Mayo Clinic, 2018).
+
+###Asthma Geographic Distribution
+
+In the two maps in _Exhibit 13_: The green-shaded one was count distribution of respondents reported having asthma, and the blue-shaded one was a probability heat map showing asthma prevalence by state. 
+
+The two maps were slightly different. States with the darkest green shades (the largest number of respondents reported having asthma) were Arizona (AZ), Florida (FL), and Kansas (KS), and states with the lightest green shades (the least number of respondents with asthma) were Nevada (NZ) and Alaska (AK). Meanwhile, the blue-shaded map indicated that asthma was the most prevalent in West Virginia (WV) and the least prevalent in Minnesota (MN).
+
+_Exhibit 13 - Asthma Geographic Distribution_
+
+```{r Map, fig.height = 5, fig.width = 9}
+CurrAsthmaState <- curr_ast_17 %>%
+  group_by(State) %>%
+  summarise(CurrAsthmaCount = n())
+
+FormAsthmaState <- form_ast_17 %>%
+  group_by(State) %>%
+  summarise(FormAsthmaCount = n())
+
+AsthmaState <- cbind(CurrAsthmaState, FormAsthmaState[,2])
+
+AsthmaState <- AsthmaState %>%
+  mutate(AllAsthma = CurrAsthmaCount + FormAsthmaCount)
+
+AsthmaState$fips <- AsthmaState$State 
+
+plot_usmap (data = AsthmaState, values = "AllAsthma", labels = TRUE) +
+  scale_fill_continuous(name = "Ever Had Asthma, 2017", low = "white", 
+                        high = "dark red", label = comma) +
+  theme(legend.position = "right")
+
+plot_usmap (data = AsthmaState, values = "CurrAsthmaCount", labels = TRUE) +
+  scale_fill_continuous(name = "Currently having Asthma", low = "white", 
+                        high = "light blue", label = comma) +
+  theme(legend.position = "right")
+
+plot_usmap (data = AsthmaState, values = "FormAsthmaCount", labels = TRUE) +
+  scale_fill_continuous(name = "Formerly having Asthma", low = "white", 
+                        high = "dark green", label = comma) +
+  theme(legend.position = "right")
+```
+
+##Current Asthma Treatments
+
+Among the respondents currently having asthama, 749 of them were asked if they had an asthma attack 12 months before the interview. Less than half of them had to visit the ER or required urgent care for an asthma attack, which agreed to what DF12 in _Exhibit 14_ showed: only 308 respondents among the 749 had an attack 12 months before the interview.
+
+_Exhibit 14 - Reported Asthma Care by Respondents with Asthma_
+
+
+
+```{r care, fig.width = 10, fig.height = 5}
+Asthma_ERVisit <- asthma2017 %>%
+  filter(!is.na(ERVisit))%>%
+  ggplot(aes(x = ERVisit)) +
+  geom_bar(fill = "brown") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Frequency of ER Visit")
+
+Asthma_Urgent_Care <- asthma2017 %>%
+  filter(!is.na(UrgentCare))%>%
+  ggplot(aes(x = UrgentCare)) +
+  geom_bar(fill = "Black") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Frequency of Urgent Care")
+
+plot_grid(Asthma_ERVisit, Asthma_Urgent_Care)
+
+DF11.1_Summary_Asthma_Attack_Past_Year <- curr_ast_17 %>%
+  filter(!is.na(Last12MonthsAttack)) %>%
+  group_by(Last12MonthsAttack) %>%
+  summarize(Count = n())
+
+DF11.2_Summary_Asthma_Care <- curr_ast_17 %>%
+  filter(!is.na(Last12MonthsAttack)) %>%
+  group_by(Last12MonthsAttack, ERVisit, UrgentCare) %>%
+  summarize(Count = n())
+
+DF11.1_Summary_Asthma_Attack_Past_Year
+DF11.2_Summary_Asthma_Care
+```
+
+The probability that a respondent who had an attack 12 months before the interview also required urgent care was $1- 122/308 = `r (1- 122/308)`$, which was higher than expected. The majority of respondents asked also did not go to more than 5 checkups a year for asthma (*Exhibit 15*).
+
+_Exhibit 15 - Reported Checkup Frequency by Respondents with Asthma_
+
+```{r checkup, fig.height=3}
+Asthma_CheckUp <- asthma2017 %>%
+  filter(!is.na(RoutineCheckUp)) %>%
+  ggplot(aes(x = RoutineCheckUp)) +
+  geom_bar(fill = "orange") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Frequency of Routine Checkups")
+
+Asthma_CheckUp
+```
+
+For more than half of the respondents who was asked if they had asthma attacks in the past 12 months, asthma symptoms showed twice a week or less. However, only 219 among 441 of those who did not have an attack 12 months before the interview showed no symptoms, which was less than half. All respondents who reported having an attack 12 months before the interview had asthma symptoms at least once. Most respondents did not report using prevention medicines for asthma, or used inhalers to stop an attack (*Exhibit 16*).
+
+_Exhibit 16 - Reported Symptoms of Respondents with Asthma_
+
+```{r symptoms}
+DF12.1_Asthma_Symptoms <- asthma2017 %>%
+  filter(!is.na(AsthmaSymptoms))%>%
+  group_by(AsthmaSymptoms) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+
+DF12.1_Asthma_Symptoms
+
+DF12.2_Asthma_Symptoms_vs_Attacks <- asthma2017 %>%
+  filter(!is.na(Last12MonthsAttack), !is.na(AsthmaSymptoms))%>%
+  group_by(Last12MonthsAttack, AsthmaSymptoms) %>%
+  summarize(count = n()) %>%
+  arrange(Last12MonthsAttack, desc(count))
+
+DF12.2_Asthma_Symptoms_vs_Attacks 
+```
+
+
+```{r meds, fig.height = 5, fig.width = 9}
+Asthma_Days_With_Meds <- asthma2017 %>%
+  filter(!is.na(DaysWithMeds))%>%
+  ggplot(aes(x = DaysWithMeds)) +
+  geom_bar(fill = "light blue") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Number of Days with Medicine for Asthma")
+
+Asthma_Inhaler_Used <- asthma2017 %>%
+  filter(!is.na(InhalerForAttack))%>%
+  ggplot(aes(x = InhalerForAttack)) +
+  geom_bar(fill = "dark green") +
+  coord_flip() +
+  guides(fill = FALSE)+
+  ggtitle("Frequency of Inhaler Used")
+
+plot_grid(Asthma_Days_With_Meds, Asthma_Inhaler_Used)
+```
